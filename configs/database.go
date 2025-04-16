@@ -3,7 +3,7 @@ package configs
 import (
 	"os"
 
-	"github.com/WV-Consultancy/pkg/factories"
+	"github.com/WV-Consultancy/snooker-pkg/factories"
 )
 
 func GetDatabaseConfig() factories.DatabaseConfig {

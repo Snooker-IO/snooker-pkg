@@ -1,6 +1,6 @@
 package configs
 
-import "github.com/WV-Consultancy/pkg/factories"
+import "github.com/WV-Consultancy/snooker-pkg/factories"
 
 type Environment string
 

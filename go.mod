@@ -1,4 +1,4 @@
-module github.com/WV-Consultancy/pkg
+module github.com/WV-Consultancy/snooker-pkg
 
 go 1.24.1
 

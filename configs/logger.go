@@ -1,7 +1,7 @@
 package configs
 
 import (
-	"github.com/WV-Consultancy/pkg/factories"
+	"github.com/WV-Consultancy/snooker-pkg/factories"
 	"go.uber.org/zap"
 )
 
