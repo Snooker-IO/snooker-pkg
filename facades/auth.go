@@ -12,13 +12,18 @@ import (
 )
 
 type AuthFacadeInterface interface {
-	RegisterRealm(ctx context.Context, opts AuthRegisterRealmOptions) error
-	AddGroupsInRealm(ctx context.Context, opts AuthAddGroupsInRealmOptions) error
-	CreateRealmRoles(ctx context.Context, opts AuthCreateRealmRolesOptions) ([]string, error)
+	CreateGroupInRealm(ctx context.Context, opts AuthCreateGroupOptions) (string, error)
 	LoginClient(ctx context.Context, opts AuthCredentialsOptions) (string, error)
 	LoginAdmin(ctx context.Context, opts AuthCredentialsOptions) (string, error)
 	RegenerateClientSecret(ctx context.Context, opts AuthCredentialsOptions) (string, error)
 	RegisterUser(ctx context.Context, opts AuthRegisterUserOptions) (string, error)
+}
+
+type AuthCreateGroupOptions struct {
+	AccessToken string
+	Realm       string
+	GroupName   string
+	Attributes  map[string][]string
 }
 
 type AuthCredentialsOptions struct {
@@ -76,90 +81,20 @@ func NewAuthFacade(auth factories.Auth, logger LoggerFacadeInterface) AuthFacade
 	}
 }
 
-func (auth *AuthKeycloak) RegisterRealm(ctx context.Context, opts AuthRegisterRealmOptions) (err error) {
-	realmRep := gocloak.RealmRepresentation{
-		Realm:   gocloak.StringP(opts.Realm),
-		Enabled: gocloak.BoolP(true),
-	}
+func (auth *AuthKeycloak) CreateGroupInRealm(ctx context.Context, opts AuthCreateGroupOptions) (string, error) {
+	group := gocloak.Group{Name: gocloak.StringP(string(opts.GroupName)), Attributes: &opts.Attributes}
 
-	_, err = auth.Keycloak.CreateRealm(ctx, opts.AccessToken, realmRep)
+	groupId, err := auth.Keycloak.CreateGroup(ctx, opts.AccessToken, opts.Realm, group)
 	if err != nil {
-		return utils.RequestError{
+		auth.Logger.Error(exceptions.ErrCreateGroupInRealm.Message, Error(err))
+		return "", utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
-			Exception:  exceptions.ErrCreateRealm,
+			Exception:  exceptions.ErrCreateGroupInRealm,
 			Err:        err,
 		}
 	}
 
-	return nil
-}
-
-func (auth *AuthKeycloak) AddGroupsInRealm(ctx context.Context, opts AuthAddGroupsInRealmOptions) error {
-	var apiErr gocloak.APIError
-	var realmRoles []gocloak.Role
-
-	roles, err := auth.Keycloak.GetRealmRoles(ctx, opts.AccessToken, opts.Realm, gocloak.GetRoleParams{})
-	if err != nil {
-		errors.As(err, &apiErr)
-		return utils.RequestError{
-			StatusCode: apiErr.Code,
-			Exception:  exceptions.ErrGetRoles,
-			Err:        err,
-		}
-	}
-
-	for _, role := range roles {
-		for _, roleName := range opts.RolesName {
-			if *role.Name == roleName {
-				realmRoles = append(realmRoles, *role)
-			}
-		}
-	}
-
-	auth.Logger.Info("realm roles", Any("roles", realmRoles))
-	for _, groupName := range opts.Groups {
-		group := gocloak.Group{Name: gocloak.StringP(string(groupName))}
-		groupId, err := auth.Keycloak.CreateGroup(ctx, opts.AccessToken, opts.Realm, group)
-		errors.As(err, &apiErr)
-		if err != nil {
-			return utils.RequestError{
-				StatusCode: apiErr.Code,
-				Exception:  exceptions.ErrCreateRealmGroups,
-				Err:        err,
-			}
-		}
-
-		err = auth.Keycloak.AddRealmRoleToGroup(ctx, opts.AccessToken, opts.Realm, groupId, realmRoles)
-		errors.As(err, &apiErr)
-		if err != nil {
-			return utils.RequestError{
-				StatusCode: apiErr.Code,
-				Exception:  exceptions.ErrLinkRoleToGroup,
-				Err:        err,
-			}
-		}
-	}
-
-	return nil
-}
-
-func (auth *AuthKeycloak) CreateRealmRoles(ctx context.Context, opts AuthCreateRealmRolesOptions) ([]string, error) {
-	var rolesRes []string
-	for _, permission := range opts.Roles {
-		role := gocloak.Role{
-			Name:        gocloak.StringP(permission.Name),
-			Description: gocloak.StringP(permission.Description),
-		}
-
-		roleUUID, err := auth.Keycloak.CreateRealmRole(ctx, opts.AccessToken, opts.Realm, role)
-		if err != nil {
-			return nil, utils.RequestError{}
-		}
-
-		rolesRes = append(rolesRes, roleUUID)
-	}
-
-	return rolesRes, nil
+	return groupId, nil
 }
 
 func (auth *AuthKeycloak) RegisterUser(ctx context.Context, opts AuthRegisterUserOptions) (string, error) {

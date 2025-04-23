@@ -35,4 +35,9 @@ var (
 		Message: "error get realm roles",
 		Code:    "keycloak.get_roles.error",
 	}
+
+	ErrCreateGroupInRealm = Exception{
+		Message: "create group in realm error",
+		Code:    "keycloak.create_group_realm.error",
+	}
 )
