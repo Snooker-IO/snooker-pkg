@@ -17,6 +17,7 @@ type AuthFacadeInterface interface {
 	LoginAdmin(ctx context.Context, opts AuthCredentialsOptions) (string, error)
 	RegenerateClientSecret(ctx context.Context, opts AuthCredentialsOptions) (string, error)
 	RegisterUser(ctx context.Context, opts AuthRegisterUserOptions) (string, error)
+	JoinUserInGroup(ctx context.Context, opts AuthJoinUserGroup) error
 }
 
 type AuthCreateGroupOptions struct {
@@ -37,6 +38,12 @@ type AuthCredentialsOptions struct {
 
 type AuthRegisterRealmOptions struct {
 	AuthCredentialsOptions
+}
+
+type AuthJoinUserGroup struct {
+	AuthCredentialsOptions
+	UserID  string
+	GroupID string
 }
 
 type AuthRegisterUserOptions struct {
@@ -125,6 +132,19 @@ func (auth *AuthKeycloak) RegisterUser(ctx context.Context, opts AuthRegisterUse
 	}
 
 	return userID, nil
+}
+
+func (auth *AuthKeycloak) JoinUserInGroup(ctx context.Context, opts AuthJoinUserGroup) error {
+	err := auth.Keycloak.AddUserToGroup(ctx, opts.AccessToken, opts.Realm, opts.UserID, opts.GroupID)
+	if err != nil {
+		return utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.Exception{},
+			Err:        err,
+		}
+	}
+
+	return nil
 }
 
 func (auth *AuthKeycloak) LoginClient(ctx context.Context, opts AuthCredentialsOptions) (string, error) {
