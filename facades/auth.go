@@ -17,6 +17,7 @@ type AuthFacadeInterface interface {
 	LoginAdmin(ctx context.Context, opts AuthCredentialsOptions) (string, error)
 	RegenerateClientSecret(ctx context.Context, opts AuthCredentialsOptions) (string, error)
 	RegisterUser(ctx context.Context, opts AuthRegisterUserOptions) (string, error)
+	Login(ctx context.Context, opts AuthCredentialsOptions) (AuthTokens, error)
 	JoinUserInGroup(ctx context.Context, opts AuthJoinUserGroup) error
 }
 
@@ -74,6 +75,13 @@ type AuthUser struct {
 type RealmRole struct {
 	Name        string
 	Description string
+}
+
+type AuthTokens struct {
+	AccessToken      string
+	RefreshToken     string
+	AccessExpiresIn  int
+	RefreshExpiresIn int
 }
 
 type AuthKeycloak struct {
@@ -203,6 +211,36 @@ func (auth *AuthKeycloak) LoginAdmin(ctx context.Context, opts AuthCredentialsOp
 
 	auth.Logger.Info("keycloak login admin successfuly")
 	return token.AccessToken, nil
+}
+
+func (auth *AuthKeycloak) Login(ctx context.Context, opts AuthCredentialsOptions) (AuthTokens, error) {
+	if opts.Username == "" {
+		return AuthTokens{}, errors.New("keycloak username is not defined")
+	}
+
+	if opts.Password == "" {
+		return AuthTokens{}, errors.New("keycloak password is not defined")
+	}
+
+	if opts.Realm == "" {
+		return AuthTokens{}, errors.New("realm is not defined")
+	}
+
+	token, err := auth.Keycloak.Login(ctx, opts.ClientID, opts.ClientSecret, opts.Realm, opts.Username, opts.Password)
+	if err != nil {
+		return AuthTokens{}, utils.RequestError{
+			StatusCode: http.StatusUnauthorized,
+			Exception:  exceptions.Exception{},
+			Err:        err,
+		}
+	}
+
+	return AuthTokens{
+		AccessToken:      token.AccessToken,
+		RefreshToken:     token.RefreshToken,
+		AccessExpiresIn:  token.ExpiresIn,
+		RefreshExpiresIn: token.RefreshExpiresIn,
+	}, nil
 }
 
 func (auth *AuthKeycloak) RegenerateClientSecret(ctx context.Context, opts AuthCredentialsOptions) (string, error) {
