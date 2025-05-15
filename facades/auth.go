@@ -19,6 +19,7 @@ type AuthFacadeInterface interface {
 	RegisterUser(ctx context.Context, opts AuthRegisterUserOptions) (string, error)
 	Login(ctx context.Context, opts AuthCredentialsOptions) (AuthTokens, error)
 	JoinUserInGroup(ctx context.Context, opts AuthJoinUserGroup) error
+	GetUserGroups(ctx context.Context, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error)
 }
 
 type AuthCreateGroupOptions struct {
@@ -82,6 +83,17 @@ type AuthTokens struct {
 	RefreshToken     string
 	AccessExpiresIn  int
 	RefreshExpiresIn int
+}
+
+type AuthGetUserGroupsOptions struct {
+	AuthCredentialsOptions
+	UserID string
+}
+
+type AuthUserGroup struct {
+	ID         string
+	Name       string
+	Attributes map[string][]string
 }
 
 type AuthKeycloak struct {
@@ -255,4 +267,28 @@ func (auth *AuthKeycloak) RegenerateClientSecret(ctx context.Context, opts AuthC
 	}
 
 	return *credentials.SecretData, nil
+}
+
+func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {
+	var groupsRes []AuthUserGroup
+
+	groups, err := auth.Keycloak.GetUserGroups(ctx, opts.AccessToken, opts.Realm, opts.UserID, gocloak.GetGroupsParams{})
+	if err != nil {
+		return nil, utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.Exception{},
+			Err:        err,
+		}
+	}
+
+	for _, group := range groups {
+		g := AuthUserGroup{
+			ID:         *group.ID,
+			Name:       *group.Name,
+			Attributes: *group.Attributes,
+		}
+
+		groupsRes = append(groupsRes, g)
+	}
+	return groupsRes, nil
 }
