@@ -1,14 +1,53 @@
 package exceptions
 
+import "fmt"
+
 var (
 	ErrKeycloakClientLogin = Exception{
-		Message: "error client login keycloak",
+		Message: "keycloak client login error",
 		Code:    "keycloak.login_client.error",
 	}
 
+	ErrKeycloakClientIDNotDefined = Exception{
+		Message: "keycloak client id is not defined",
+		Code:    "keycloak.login_client.client_id_not_defined.error",
+	}
+
+	ErrKeycloakClientSecretNotDefined = Exception{
+		Message: "keycloak client secret is not defined",
+		Code:    "keycloak.login_client.client_secret_not_defined.error",
+	}
+
+	ErrKeycloakAdminUsernameNotDefined = Exception{
+		Message: "keycloak admin username is not defined",
+		Code:    "keycloak.login_admin.username_not_defined.error",
+	}
+
+	ErrKeycloakAdminPassowordNotDefined = Exception{
+		Message: "keycloak admin password is not defined",
+		Code:    "keycloak.login_admin.password_not_defined.error",
+	}
+
+	ErrKeycloakRealmNotDefined = func(funcName string) Exception {
+		return Exception{
+			Message: "keycloak realm is not defined",
+			Code:    fmt.Sprintf("keycloak.%s.realm_not_defined.error", funcName),
+		}
+	}
+
 	ErrKeycloakAdminLogin = Exception{
-		Message: "error admin login keycloak",
+		Message: "keycloak admin login error",
 		Code:    "keycloak.login_admin.error",
+	}
+
+	ErrKeycloakCreateUser = Exception{
+		Message: "keycloak create user error",
+		Code:    "keycloak.create_user.error",
+	}
+
+	ErrKeycloakSetPassword = Exception{
+		Message: "keycloak user set password error",
+		Code:    "keycloak.create_user.set_password.error",
 	}
 
 	ErrCreateRealm = Exception{
@@ -36,8 +75,18 @@ var (
 		Code:    "keycloak.get_roles.error",
 	}
 
-	ErrCreateGroupInRealm = Exception{
-		Message: "create group in realm error",
-		Code:    "keycloak.create_group_realm.error",
+	ErrKeycloakCreateGroup = Exception{
+		Message: "keycloak create group in realm error",
+		Code:    "keycloak.create_group.error",
+	}
+
+	ErrKeycloakJoinUserToGroup = Exception{
+		Message: "keycloak add user in group error",
+		Code:    "keycloak.join_group_to_user.error",
+	}
+
+	ErrKeycloakRemoveUserToGroup = Exception{
+		Message: "keycloak remove user from group error",
+		Code:    "keycloak.remove_user_to_group.error",
 	}
 )
