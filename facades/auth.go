@@ -13,6 +13,7 @@ import (
 
 type AuthFacadeInterface interface {
 	CreateGroup(ctx context.Context, groupName string, opts AuthCreateGroupOptions) (string, error)
+	CreateChildGroup(ctx context.Context, groupName string, mainGroupId string, opts AuthCreateGroupOptions) (string, error)
 	LoginClient(ctx context.Context, opts AuthCredentialsOptions) (string, error)
 	LoginAdmin(ctx context.Context, opts AuthCredentialsOptions) (string, error)
 	RegenerateClientSecret(ctx context.Context, opts AuthCredentialsOptions) (string, error)
@@ -116,6 +117,24 @@ func (auth *AuthKeycloak) CreateGroup(ctx context.Context, groupName string, opt
 	}
 
 	groupId, err := auth.Keycloak.CreateGroup(ctx, opts.AccessToken, opts.Realm, group)
+	if err != nil {
+		return "", utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.ErrKeycloakCreateGroup,
+			Err:        err,
+		}
+	}
+
+	return groupId, nil
+}
+
+func (auth *AuthKeycloak) CreateChildGroup(ctx context.Context, groupName string, mainGroupId string, opts AuthCreateGroupOptions) (string, error) {
+	group := gocloak.Group{
+		Name:       gocloak.StringP(groupName),
+		Attributes: &opts.Attributes,
+	}
+
+	groupId, err := auth.Keycloak.CreateChildGroup(ctx, opts.AccessToken, opts.Realm, mainGroupId, group)
 	if err != nil {
 		return "", utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
