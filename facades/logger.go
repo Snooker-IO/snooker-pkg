@@ -69,15 +69,15 @@ func Error(value error) LoggerField {
 }
 
 func String(key string, value string) LoggerField {
-	return LoggerField{Type: LOGGER_STRING, String: value}
+	return LoggerField{Key: key, Type: LOGGER_STRING, String: value}
 }
 
 func Any(key string, value interface{}) LoggerField {
-	return LoggerField{Type: LOGGER_ANY, Interface: value}
+	return LoggerField{Key: key, Type: LOGGER_ANY, Interface: value}
 }
 
 func Int(key string, value int) LoggerField {
-	return LoggerField{Type: LOGGER_INT, Interface: value}
+	return LoggerField{Key: key, Type: LOGGER_INT, Interface: value}
 }
 
 func setLoggerField(log LoggerField) zap.Field {
