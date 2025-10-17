@@ -1,8 +1,6 @@
 package factories
 
 import (
-	"fmt"
-
 	"github.com/Nerzal/gocloak/v13"
 )
 
@@ -48,7 +46,6 @@ func (cfg AuthConfig) AuthFactory() Auth {
 }
 
 func (cfg AuthConfig) ConnectKeycloak() Auth {
-	fmt.Println(cfg.Keycloak.URL)
 	client := gocloak.NewClient(cfg.Keycloak.URL)
 	return Auth{
 		Keycloak: Keycloak{

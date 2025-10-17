@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/WV-Consultancy/snooker-pkg/exceptions"
+	"github.com/Snooker-IO/snooker-pkg/exceptions"
 	"github.com/labstack/echo/v4"
 )
 

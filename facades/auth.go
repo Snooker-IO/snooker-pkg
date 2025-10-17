@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/Nerzal/gocloak/v13"
-	"github.com/WV-Consultancy/snooker-pkg/exceptions"
-	"github.com/WV-Consultancy/snooker-pkg/factories"
-	"github.com/WV-Consultancy/snooker-pkg/utils"
+	"github.com/Snooker-IO/snooker-pkg/exceptions"
+	"github.com/Snooker-IO/snooker-pkg/factories"
+	"github.com/Snooker-IO/snooker-pkg/utils"
 )
 
 type AuthFacadeInterface interface {

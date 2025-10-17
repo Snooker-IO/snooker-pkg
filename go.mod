@@ -1,4 +1,4 @@
-module github.com/WV-Consultancy/snooker-pkg
+module github.com/Snooker-IO/snooker-pkg
 
 go 1.24.1
 

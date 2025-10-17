@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	facades "github.com/WV-Consultancy/snooker-pkg/facades"
+	facades "github.com/Snooker-IO/snooker-pkg/facades"
 	mock "github.com/stretchr/testify/mock"
 )
 
