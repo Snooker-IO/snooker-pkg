@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/Snooker-IO/snooker-pkg/exceptions"
@@ -95,7 +96,7 @@ type AuthGetUserGroupsOptions struct {
 type AuthUserGroup struct {
 	ID         *string
 	Name       *string
-	Attributes *map[string][]string
+	Attributes map[string]int
 	Childrens  []AuthUserGroup
 }
 
@@ -339,40 +340,61 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 		}
 	}
 
-	groupsRes := make([]AuthUserGroup, len(groups))
+	groupsFormat, err := auth.proccessGroups(ctx, groups, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return groupsFormat, nil
+}
+
+func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.Group, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {
+	var groupsRes []AuthUserGroup
+
 	for _, group := range groups {
-		auth.Logger.Info("users groups", Any("groups", groups))
+		if group.ID == nil {
+			auth.Logger.Info("grupo sem ID ignorado", Any("group", group))
+			continue
+		}
+
 		fullGroup, err := auth.Keycloak.GetGroup(ctx, opts.AccessToken, opts.Realm, *group.ID)
 		if err != nil {
+			auth.Logger.Error("erro ao buscar grupo", Any("group_id", *group.ID), Error(err))
 			return nil, utils.RequestError{}
 		}
 
-		auth.Logger.Info("group details", Any("group details", fullGroup))
 		g := AuthUserGroup{
 			ID:         fullGroup.ID,
 			Name:       fullGroup.Name,
-			Attributes: fullGroup.Attributes,
+			Attributes: map[string]int{},
 		}
 
-		if fullGroup.SubGroups != nil {
-			auth.Logger.Info("user subgroups", Any("subgroups", fullGroup.SubGroups))
-			subGroupsRes := make([]AuthUserGroup, len(*group.SubGroups))
-			for _, subGroup := range *fullGroup.SubGroups {
-				parent, err := auth.Keycloak.GetGroup(ctx, opts.AccessToken, opts.ClientID, *subGroup.ID)
+		if fullGroup.Attributes != nil {
+			for key, value := range *fullGroup.Attributes {
+				if len(value) == 0 {
+					continue
+				}
+				v, err := strconv.Atoi(value[0])
 				if err != nil {
-					return nil, utils.RequestError{}
+					auth.Logger.Error("atributo não numérico", Error(err))
+					continue
 				}
+				g.Attributes[key] = v
+			}
+		}
 
-				sg := AuthUserGroup{
-					ID:         parent.ID,
-					Name:       parent.Name,
-					Attributes: parent.Attributes,
-				}
-
-				subGroupsRes = append(subGroupsRes, sg)
+		if fullGroup.SubGroups != nil && len(*fullGroup.SubGroups) > 0 {
+			auth.Logger.Debug("processando subgrupos", Any("group_id", fullGroup.ID))
+			subGroupsPtr := make([]*gocloak.Group, 0, len(*fullGroup.SubGroups))
+			for i := range *fullGroup.SubGroups {
+				subGroupsPtr = append(subGroupsPtr, &(*fullGroup.SubGroups)[i])
 			}
 
-			g.Childrens = subGroupsRes
+			subgroups, err := auth.proccessGroups(ctx, subGroupsPtr, opts)
+			if err != nil {
+				return nil, utils.RequestError{}
+			}
+			g.Childrens = subgroups
 		}
 
 		groupsRes = append(groupsRes, g)
