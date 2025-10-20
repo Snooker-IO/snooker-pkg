@@ -329,7 +329,6 @@ func (auth *AuthKeycloak) RegenerateClientSecret(ctx context.Context, opts AuthC
 }
 
 func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {
-	var groupsRes []AuthUserGroup
 
 	groups, err := auth.Keycloak.GetUserGroups(ctx, opts.AccessToken, opts.Realm, opts.UserID, gocloak.GetGroupsParams{})
 	if err != nil {
@@ -340,6 +339,7 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 		}
 	}
 
+	groupsRes := make([]AuthUserGroup, len(groups))
 	for _, group := range groups {
 		g := AuthUserGroup{
 			ID:         *group.ID,
