@@ -7,6 +7,7 @@ import (
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/Snooker-IO/snooker-pkg/exceptions"
+	"github.com/Snooker-IO/snooker-pkg/facades"
 	"github.com/Snooker-IO/snooker-pkg/factories"
 	"github.com/Snooker-IO/snooker-pkg/utils"
 )
@@ -330,7 +331,6 @@ func (auth *AuthKeycloak) RegenerateClientSecret(ctx context.Context, opts AuthC
 }
 
 func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {
-
 	groups, err := auth.Keycloak.GetUserGroups(ctx, opts.AccessToken, opts.Realm, opts.UserID, gocloak.GetGroupsParams{})
 	if err != nil {
 		return nil, utils.RequestError{
@@ -342,10 +342,13 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 
 	groupsRes := make([]AuthUserGroup, len(groups))
 	for _, group := range groups {
+		auth.Logger.Info("users groups", facades.Any(groups))
 		fullGroup, err := auth.Keycloak.GetGroup(ctx, opts.AccessToken, opts.Realm, *group.ID)
 		if err != nil {
 			return nil, utils.RequestError{}
 		}
+
+		auth.Logger.Info("group details", facades.Any(fullGroup))
 		g := AuthUserGroup{
 			ID:         fullGroup.ID,
 			Name:       fullGroup.Name,
@@ -353,6 +356,7 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 		}
 
 		if fullGroup.SubGroups != nil {
+			auth.Logger.Info("user subgroups", facades.Any(fullGroup.SubGroups))
 			subGroupsRes := make([]AuthUserGroup, len(*group.SubGroups))
 			for _, subGroup := range *fullGroup.SubGroups {
 				parent, err := auth.Keycloak.GetGroup(ctx, opts.AccessToken, opts.ClientID, *subGroup.ID)
