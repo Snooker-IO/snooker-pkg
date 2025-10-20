@@ -95,7 +95,7 @@ type AuthGetUserGroupsOptions struct {
 type AuthUserGroup struct {
 	ID         string
 	Name       string
-	Attributes map[string][]string
+	Attributes *map[string][]string
 }
 
 type AuthKeycloak struct {
@@ -341,12 +341,20 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 
 	groupsRes := make([]AuthUserGroup, len(groups))
 	for _, group := range groups {
-		g := AuthUserGroup{
-			ID:         *group.ID,
-			Name:       *group.Name,
-			Attributes: *group.Attributes,
+
+		g := AuthUserGroup{}
+
+		if group.ID != nil {
+			g.ID = *group.ID
 		}
 
+		if group.Name != nil {
+			g.ID = *group.Name
+		}
+
+		if group.Attributes != nil {
+			g.Attributes = group.Attributes
+		}
 		groupsRes = append(groupsRes, g)
 	}
 	return groupsRes, nil
