@@ -342,14 +342,10 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 	groupsRes := make([]AuthUserGroup, len(groups))
 	for _, group := range groups {
 
-		g := AuthUserGroup{}
-
-		if group.ID != nil {
-			g.ID = group.ID
-		}
-
-		if group.Name != nil {
-			g.ID = group.Name
+		g := AuthUserGroup{
+			ID:         group.ID,
+			Name:       group.Name,
+			Attributes: group.Attributes,
 		}
 
 		if group.Attributes != nil {
