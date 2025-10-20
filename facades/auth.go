@@ -96,6 +96,7 @@ type AuthUserGroup struct {
 	ID         *string
 	Name       *string
 	Attributes *map[string][]string
+	Childrens  []AuthUserGroup
 }
 
 type AuthKeycloak struct {
@@ -341,18 +342,39 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 
 	groupsRes := make([]AuthUserGroup, len(groups))
 	for _, group := range groups {
-
+		fullGroup, err := auth.Keycloak.GetGroup(ctx, opts.AccessToken, opts.Realm, *group.ID)
+		if err != nil {
+			return nil, utils.RequestError{}
+		}
 		g := AuthUserGroup{
-			ID:         group.ID,
-			Name:       group.Name,
-			Attributes: group.Attributes,
+			ID:         fullGroup.ID,
+			Name:       fullGroup.Name,
+			Attributes: fullGroup.Attributes,
 		}
 
-		if group.Attributes != nil {
-			g.Attributes = group.Attributes
+		if fullGroup.SubGroups != nil {
+			subGroupsRes := make([]AuthUserGroup, len(*group.SubGroups))
+			for _, subGroup := range *fullGroup.SubGroups {
+				parent, err := auth.Keycloak.GetGroup(ctx, opts.AccessToken, opts.ClientID, *subGroup.ID)
+				if err != nil {
+					return nil, utils.RequestError{}
+				}
+
+				sg := AuthUserGroup{
+					ID:         parent.ID,
+					Name:       parent.Name,
+					Attributes: parent.Attributes,
+				}
+
+				subGroupsRes = append(subGroupsRes, sg)
+			}
+
+			g.Childrens = subGroupsRes
 		}
+
 		groupsRes = append(groupsRes, g)
 	}
+
 	return groupsRes, nil
 }
 
