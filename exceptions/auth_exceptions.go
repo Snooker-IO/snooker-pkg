@@ -1,92 +1,111 @@
 package exceptions
 
-import "fmt"
+const (
+	KCRealmNotDefined             = "KEYCLOAK_REALM_NOT_DEFINED"
+	KCAdminLoginError             = "KEYCLOAK_ADMIN_LOGIN_ERROR"
+	KCLoginError                  = "KEYCLOAK_LOGIN_ERROR"
+	KCAdminCreateUserError        = "KEYCLOAK_ADMIN_CREATE_USER_ERROR"
+	KCAdminUserSetPasswordError   = "KEYCLOAK_ADMIN_USER_SET_PASSWORD_ERROR"
+	KCRegenerateClientSecretError = "KEYCLOAK_REGENERATE_CLIENT_SECRET_ERROR"
+
+	KCAdminCreateGroupError     = "KEYCLOAK_ADMIN_CREATE_GROUP_ERROR"
+	KCAdminAddUserGroupError    = "KEYCLOAK_ADMIN_ADD_USER_GROUP_ERROR"
+	KCAdminRemoveUserGroupError = "KEYCLOAK_ADMIN_REMOVE_USER_GROUP_ERROR"
+	KCAdminGetUserGroupsError   = "KEYCLOAK_ADMIN_GET_USER_GROUPS_ERROR"
+	KCAdminGetGroupError        = "KEYCLOAK_ADMIN_GET_GROUP_ERROR"
+
+	KCLoginClientError        = "KEYCLOAK_LOGIN_CLIENT_ERROR"
+	KCCLientIdNotDefined      = "KEYCLOAK_CLIENT_ID_NOT_DEFINED"
+	KCClientSecretNotDefined  = "KEYCLOAK_CLIENT_SECRET_NOT_DEFINED"
+	KCAdminUsernameNotDefined = "KEYCLOAK_ADMIN_USERNAME_NOT_DEFINED"
+	KCAdminPasswordNotDefined = "KEYCLOAK_ADMIN_PASSWORD_NOT_DEFINED"
+
+	AuthProccessSubgroupError = "AUTH_PROCCESS_SUBGROUP_ERROR"
+)
 
 var (
 	ErrKeycloakClientLogin = Exception{
 		Message: "keycloak client login error",
-		Code:    "keycloak.login_client.error",
+		Code:    KCLoginClientError,
 	}
 
 	ErrKeycloakClientIDNotDefined = Exception{
 		Message: "keycloak client id is not defined",
-		Code:    "keycloak.login_client.client_id_not_defined.error",
+		Code:    KCCLientIdNotDefined,
 	}
 
 	ErrKeycloakClientSecretNotDefined = Exception{
 		Message: "keycloak client secret is not defined",
-		Code:    "keycloak.login_client.client_secret_not_defined.error",
+		Code:    KCClientSecretNotDefined,
 	}
 
 	ErrKeycloakAdminUsernameNotDefined = Exception{
 		Message: "keycloak admin username is not defined",
-		Code:    "keycloak.login_admin.username_not_defined.error",
+		Code:    KCAdminUsernameNotDefined,
 	}
 
 	ErrKeycloakAdminPassowordNotDefined = Exception{
 		Message: "keycloak admin password is not defined",
-		Code:    "keycloak.login_admin.password_not_defined.error",
+		Code:    KCAdminPasswordNotDefined,
 	}
 
-	ErrKeycloakRealmNotDefined = func(funcName string) Exception {
-		return Exception{
-			Message: "keycloak realm is not defined",
-			Code:    fmt.Sprintf("keycloak.%s.realm_not_defined.error", funcName),
-		}
+	ErrKeycloakRealmNotDefined = Exception{
+		Message: "keycloak realm is not defined",
+		Code:    KCRealmNotDefined,
 	}
 
 	ErrKeycloakAdminLogin = Exception{
 		Message: "keycloak admin login error",
-		Code:    "keycloak.login_admin.error",
+		Code:    KCAdminLoginError,
+	}
+
+	ErrKeycloakLogin = Exception{
+		Message: "keycloak login error",
+		Code:    KCLoginError,
 	}
 
 	ErrKeycloakCreateUser = Exception{
 		Message: "keycloak create user error",
-		Code:    "keycloak.create_user.error",
+		Code:    KCAdminCreateUserError,
 	}
 
 	ErrKeycloakSetPassword = Exception{
 		Message: "keycloak user set password error",
-		Code:    "keycloak.create_user.set_password.error",
-	}
-
-	ErrCreateRealm = Exception{
-		Message: "error create organization realm",
-		Code:    "keycloak.create_r.error",
-	}
-
-	ErrCreateRealmGroups = Exception{
-		Message: "error create realm groups",
-		Code:    "keycloak.create_group.error",
-	}
-
-	ErrRegenerateSecrete = Exception{
-		Message: "error regenerate realm client secret",
-		Code:    "keycloak.regenerate_secret.error",
-	}
-
-	ErrLinkRoleToGroup = Exception{
-		Message: "error link realm role to group",
-		Code:    "keycloak.add_roles_group.error",
-	}
-
-	ErrGetRoles = Exception{
-		Message: "error get realm roles",
-		Code:    "keycloak.get_roles.error",
+		Code:    KCAdminUserSetPasswordError,
 	}
 
 	ErrKeycloakCreateGroup = Exception{
-		Message: "keycloak create group in realm error",
-		Code:    "keycloak.create_group.error",
+		Message: "error create group",
+		Code:    KCAdminCreateGroupError,
+	}
+
+	ErrKeycloakGetUserGroups = Exception{
+		Message: "error get user groups",
+		Code:    KCAdminGetUserGroupsError,
+	}
+
+	ErrKeycloakGetGroup = Exception{
+		Message: "error get group",
+		Code:    KCAdminGetGroupError,
 	}
 
 	ErrKeycloakJoinUserToGroup = Exception{
 		Message: "keycloak add user in group error",
-		Code:    "keycloak.join_group_to_user.error",
+		Code:    KCAdminAddUserGroupError,
 	}
 
 	ErrKeycloakRemoveUserToGroup = Exception{
 		Message: "keycloak remove user from group error",
-		Code:    "keycloak.remove_user_to_group.error",
+		Code:    KCAdminRemoveUserGroupError,
+	}
+
+	ErrRegenerateSecrete = Exception{
+		Message: "error regenerate realm client secret",
+		Code:    KCRegenerateClientSecretError,
+	}
+
+	ErrProccessSubGroups = Exception{
+		Message: "error proccess subgroups",
+		Code:    AuthProccessSubgroupError,
 	}
 )

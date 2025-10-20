@@ -120,6 +120,7 @@ func (auth *AuthKeycloak) CreateGroup(ctx context.Context, groupName string, opt
 
 	groupId, err := auth.Keycloak.CreateGroup(ctx, opts.AccessToken, opts.Realm, group)
 	if err != nil {
+		auth.Logger.Error(exceptions.ErrKeycloakCreateGroup.Message, Error(err))
 		return "", utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
 			Exception:  exceptions.ErrKeycloakCreateGroup,
@@ -138,6 +139,7 @@ func (auth *AuthKeycloak) CreateChildGroup(ctx context.Context, groupName string
 
 	groupId, err := auth.Keycloak.CreateChildGroup(ctx, opts.AccessToken, opts.Realm, mainGroupId, group)
 	if err != nil {
+		auth.Logger.Error(exceptions.ErrKeycloakCreateGroup.Message, Error(err))
 		return "", utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
 			Exception:  exceptions.ErrKeycloakCreateGroup,
@@ -159,6 +161,7 @@ func (auth *AuthKeycloak) CreateUser(ctx context.Context, opts AuthCreateUserOpt
 
 	userID, err := auth.Keycloak.CreateUser(ctx, opts.AccessToken, opts.Realm, userRegister)
 	if err != nil {
+		auth.Logger.Error(exceptions.ErrKeycloakCreateUser.Message, Error(err))
 		return "", utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
 			Exception:  exceptions.ErrKeycloakCreateUser,
@@ -168,6 +171,7 @@ func (auth *AuthKeycloak) CreateUser(ctx context.Context, opts AuthCreateUserOpt
 
 	err = auth.Keycloak.SetPassword(ctx, opts.AccessToken, userID, opts.Realm, opts.User.Password, false)
 	if err != nil {
+		auth.Logger.Error("set password in keycloak error", Error(err))
 		return "", utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
 			Exception:  exceptions.ErrKeycloakSetPassword,
@@ -181,6 +185,7 @@ func (auth *AuthKeycloak) CreateUser(ctx context.Context, opts AuthCreateUserOpt
 func (auth *AuthKeycloak) JoinUserToGroup(ctx context.Context, opts AuthJoinUserGroup) error {
 	err := auth.Keycloak.AddUserToGroup(ctx, opts.AccessToken, opts.Realm, opts.UserID, opts.GroupID)
 	if err != nil {
+		auth.Logger.Error(exceptions.ErrKeycloakJoinUserToGroup.Message, Error(err))
 		return utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
 			Exception:  exceptions.ErrKeycloakJoinUserToGroup,
@@ -194,6 +199,7 @@ func (auth *AuthKeycloak) JoinUserToGroup(ctx context.Context, opts AuthJoinUser
 func (auth *AuthKeycloak) RemoveUserToGroup(ctx context.Context, opts AuthJoinUserGroup) error {
 	err := auth.Keycloak.DeleteUserFromGroup(ctx, opts.AccessToken, opts.Realm, opts.UserID, opts.GroupID)
 	if err != nil {
+		auth.Logger.Error(exceptions.ErrKeycloakRemoveUserToGroup.Message, Error(err))
 		return utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
 			Exception:  exceptions.ErrKeycloakRemoveUserToGroup,
@@ -206,6 +212,7 @@ func (auth *AuthKeycloak) RemoveUserToGroup(ctx context.Context, opts AuthJoinUs
 
 func (auth *AuthKeycloak) LoginClient(ctx context.Context, opts AuthCredentialsOptions) (string, error) {
 	if opts.ClientID == "" {
+		auth.Logger.Error("client id not defined")
 		return "", utils.RequestError{
 			StatusCode: http.StatusBadRequest,
 			Exception:  exceptions.ErrKeycloakClientIDNotDefined,
@@ -214,6 +221,7 @@ func (auth *AuthKeycloak) LoginClient(ctx context.Context, opts AuthCredentialsO
 	}
 
 	if opts.ClientSecret == "" {
+		auth.Logger.Error("client secret not defined")
 		return "", utils.RequestError{
 			StatusCode: http.StatusBadRequest,
 			Exception:  exceptions.ErrKeycloakClientSecretNotDefined,
@@ -222,14 +230,13 @@ func (auth *AuthKeycloak) LoginClient(ctx context.Context, opts AuthCredentialsO
 	}
 
 	if opts.Realm == "" {
+		auth.Logger.Error("realm not defined")
 		return "", utils.RequestError{
 			StatusCode: http.StatusBadRequest,
-			Exception:  exceptions.ErrKeycloakRealmNotDefined("login_client"),
+			Exception:  exceptions.ErrKeycloakRealmNotDefined,
 			Err:        nil,
 		}
 	}
-
-	auth.Logger.Info("keycloack login client", Any("keys", opts))
 
 	token, err := auth.Keycloak.LoginClient(ctx, opts.ClientID, opts.ClientSecret, opts.Realm)
 	if err != nil {
@@ -247,6 +254,7 @@ func (auth *AuthKeycloak) LoginClient(ctx context.Context, opts AuthCredentialsO
 
 func (auth *AuthKeycloak) LoginAdmin(ctx context.Context, opts AuthCredentialsOptions) (string, error) {
 	if opts.Username == "" {
+		auth.Logger.Error(exceptions.ErrKeycloakAdminUsernameNotDefined.Message)
 		return "", &utils.RequestError{
 			StatusCode: http.StatusBadRequest,
 			Exception:  exceptions.ErrKeycloakAdminUsernameNotDefined,
@@ -255,6 +263,7 @@ func (auth *AuthKeycloak) LoginAdmin(ctx context.Context, opts AuthCredentialsOp
 	}
 
 	if opts.Password == "" {
+		auth.Logger.Error(exceptions.ErrKeycloakAdminPassowordNotDefined.Message)
 		return "", &utils.RequestError{
 			StatusCode: http.StatusBadRequest,
 			Exception:  exceptions.ErrKeycloakAdminPassowordNotDefined,
@@ -263,14 +272,13 @@ func (auth *AuthKeycloak) LoginAdmin(ctx context.Context, opts AuthCredentialsOp
 	}
 
 	if opts.Realm == "" {
+		auth.Logger.Error(exceptions.ErrKeycloakRealmNotDefined.Message)
 		return "", &utils.RequestError{
 			StatusCode: http.StatusBadRequest,
-			Exception:  exceptions.ErrKeycloakRealmNotDefined("login_admin"),
+			Exception:  exceptions.ErrKeycloakRealmNotDefined,
 			Err:        nil,
 		}
 	}
-
-	auth.Logger.Info("keycloack login admin", Any("keys", opts))
 
 	token, err := auth.Keycloak.LoginAdmin(ctx, opts.Username, opts.Password, opts.Realm)
 	if err != nil {
@@ -288,26 +296,37 @@ func (auth *AuthKeycloak) LoginAdmin(ctx context.Context, opts AuthCredentialsOp
 
 func (auth *AuthKeycloak) Login(ctx context.Context, opts AuthCredentialsOptions) (AuthTokens, error) {
 	if opts.Username == "" {
-		return AuthTokens{}, errors.New("keycloak username is not defined")
+		return AuthTokens{}, utils.RequestError{
+			StatusCode: http.StatusBadRequest,
+			Exception:  exceptions.ErrKeycloakAdminUsernameNotDefined,
+		}
 	}
 
 	if opts.Password == "" {
-		return AuthTokens{}, errors.New("keycloak password is not defined")
+		return AuthTokens{}, utils.RequestError{
+			StatusCode: http.StatusBadRequest,
+			Exception:  exceptions.ErrKeycloakAdminPassowordNotDefined,
+		}
 	}
 
 	if opts.Realm == "" {
-		return AuthTokens{}, errors.New("realm is not defined")
+		return AuthTokens{}, utils.RequestError{
+			StatusCode: http.StatusBadRequest,
+			Exception:  exceptions.ErrKeycloakRealmNotDefined,
+		}
 	}
 
 	token, err := auth.Keycloak.Login(ctx, opts.ClientID, opts.ClientSecret, opts.Realm, opts.Username, opts.Password)
 	if err != nil {
+		auth.Logger.Error(exceptions.ErrKeycloakLogin.Message, Error(err))
 		return AuthTokens{}, utils.RequestError{
 			StatusCode: http.StatusUnauthorized,
-			Exception:  exceptions.Exception{},
+			Exception:  exceptions.ErrKeycloakLogin,
 			Err:        err,
 		}
 	}
 
+	auth.Logger.Info("keycloak login successfuly")
 	return AuthTokens{
 		AccessToken:      token.AccessToken,
 		RefreshToken:     token.RefreshToken,
@@ -319,7 +338,7 @@ func (auth *AuthKeycloak) Login(ctx context.Context, opts AuthCredentialsOptions
 func (auth *AuthKeycloak) RegenerateClientSecret(ctx context.Context, opts AuthCredentialsOptions) (string, error) {
 	credentials, err := auth.Keycloak.RegenerateClientSecret(ctx, opts.AccessToken, opts.Realm, opts.ClientID)
 	if err != nil {
-		auth.Logger.Error("error regenerate client secret", Error(err))
+		auth.Logger.Error(exceptions.ErrRegenerateSecrete.Message, Error(err))
 		return "", utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
 			Exception:  exceptions.ErrRegenerateSecrete,
@@ -333,19 +352,42 @@ func (auth *AuthKeycloak) RegenerateClientSecret(ctx context.Context, opts AuthC
 func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {
 	groups, err := auth.Keycloak.GetUserGroups(ctx, opts.AccessToken, opts.Realm, opts.UserID, gocloak.GetGroupsParams{})
 	if err != nil {
+		auth.Logger.Error(exceptions.ErrKeycloakGetUserGroups.Message, Error(err))
 		return nil, utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
-			Exception:  exceptions.Exception{},
+			Exception:  exceptions.ErrKeycloakGetUserGroups,
 			Err:        err,
 		}
 	}
 
 	groupsFormat, err := auth.proccessGroups(ctx, groups, opts)
 	if err != nil {
+		auth.Logger.Info("proccess keycloak groups", Any("groups", groups))
 		return nil, err
 	}
 
 	return groupsFormat, nil
+}
+
+func (auth *AuthKeycloak) CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error) {
+	res, err := auth.Keycloak.RetrospectToken(ctx, token, opts.ClientID, opts.ClientSecret, opts.Realm)
+	if err != nil {
+		return false, utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.Exception{},
+			Err:        err,
+		}
+	}
+
+	if res.Active != nil && !*res.Active {
+		return false, utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.Exception{},
+			Err:        errors.New("invalid user token"),
+		}
+	}
+
+	return true, nil
 }
 
 func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.Group, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {
@@ -353,14 +395,18 @@ func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.
 
 	for _, group := range groups {
 		if group.ID == nil {
-			auth.Logger.Info("grupo sem ID ignorado", Any("group", group))
+			auth.Logger.Info("group ID not defined. Ignore group in proccess.", Any("group", group))
 			continue
 		}
 
 		fullGroup, err := auth.Keycloak.GetGroup(ctx, opts.AccessToken, opts.Realm, *group.ID)
 		if err != nil {
-			auth.Logger.Error("erro ao buscar grupo", Any("group_id", *group.ID), Error(err))
-			return nil, utils.RequestError{}
+			auth.Logger.Error(exceptions.ErrKeycloakGetGroup.Message, Any("group_id", *group.ID), Error(err))
+			return nil, utils.RequestError{
+				StatusCode: http.StatusInternalServerError,
+				Exception:  exceptions.ErrKeycloakGetGroup,
+				Err:        err,
+			}
 		}
 
 		g := AuthUserGroup{
@@ -384,7 +430,7 @@ func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.
 		}
 
 		if fullGroup.SubGroups != nil && len(*fullGroup.SubGroups) > 0 {
-			auth.Logger.Debug("processando subgrupos", Any("group_id", fullGroup.ID))
+			auth.Logger.Debug("proccess subgroups", Any("group_id", fullGroup.ID))
 			subGroupsPtr := make([]*gocloak.Group, 0, len(*fullGroup.SubGroups))
 			for i := range *fullGroup.SubGroups {
 				subGroupsPtr = append(subGroupsPtr, &(*fullGroup.SubGroups)[i])
@@ -392,7 +438,12 @@ func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.
 
 			subgroups, err := auth.proccessGroups(ctx, subGroupsPtr, opts)
 			if err != nil {
-				return nil, utils.RequestError{}
+				auth.Logger.Error(exceptions.ErrProccessSubGroups.Message, Error(err))
+				return nil, utils.RequestError{
+					StatusCode: http.StatusInternalServerError,
+					Exception:  exceptions.ErrProccessSubGroups,
+					Err:        err,
+				}
 			}
 			g.Childrens = subgroups
 		}
@@ -401,25 +452,4 @@ func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.
 	}
 
 	return groupsRes, nil
-}
-
-func (auth *AuthKeycloak) CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error) {
-	res, err := auth.Keycloak.RetrospectToken(ctx, token, opts.ClientID, opts.ClientSecret, opts.Realm)
-	if err != nil {
-		return false, utils.RequestError{
-			StatusCode: http.StatusInternalServerError,
-			Exception:  exceptions.Exception{},
-			Err:        err,
-		}
-	}
-
-	if res.Active != nil && !*res.Active {
-		return false, utils.RequestError{
-			StatusCode: http.StatusInternalServerError,
-			Exception:  exceptions.Exception{},
-			Err:        errors.New("invalid user token"),
-		}
-	}
-
-	return true, nil
 }
