@@ -9,6 +9,7 @@ const (
 	KCTokenExpired           = "KEYCLOAK_TOKEN_EXPIRED"
 	KCDecodeAccessTokenError = "KEYCLOAK_ACCESS_TOKEN_DECODE_ERROR"
 	KCTokenClaimsEmpty       = "KEYCLOAK_ACCESS_TOKEN_CLAIMS_EMPTY"
+	KCLogoutAllSessionError  = "KEYCLOAK_LOGOUT_ALL_ERROR"
 
 	KCAdminCreateUserError        = "KEYCLOAK_ADMIN_CREATE_USER_ERROR"
 	KCAdminUserSetPasswordError   = "KEYCLOAK_ADMIN_USER_SET_PASSWORD_ERROR"
@@ -133,5 +134,10 @@ var (
 	ErrClaimsIsEmpty = Exception{
 		Message: "token claims is empty",
 		Code:    KCTokenClaimsEmpty,
+	}
+
+	ErrLogoutAllSessions = Exception{
+		Message: "error logout all sessions",
+		Code:    KCLogoutAllSessionError,
 	}
 )

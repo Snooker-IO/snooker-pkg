@@ -25,6 +25,7 @@ type AuthFacadeInterface interface {
 	CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error)
 	GetTokenClaims(ctx context.Context, token string, opts AuthCredentialsOptions) (map[string]interface{}, error)
 	GetPermittedAttributes(groups []AuthUserGroup) map[string]int
+	LogoutAllSessionUser(ctx context.Context, userId string, opts AuthCredentialsOptions) error
 }
 
 type AuthCreateGroupOptions struct {
@@ -433,6 +434,20 @@ func (auth *AuthKeycloak) GetPermittedAttributes(groups []AuthUserGroup) map[str
 	}
 
 	return attrsPermitted
+}
+
+func (auth *AuthKeycloak) LogoutAllSessionUser(ctx context.Context, userId string, opts AuthCredentialsOptions) error {
+	err := auth.Keycloak.LogoutAllSessions(ctx, opts.AccessToken, opts.Realm, userId)
+	if err != nil {
+		auth.Logger.Error(exceptions.ErrLogoutAllSessions.Message, Error(err))
+		return utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.ErrLogoutAllSessions,
+			Err:        err,
+		}
+	}
+
+	return nil
 }
 
 func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.Group, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {
