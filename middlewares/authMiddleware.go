@@ -111,6 +111,8 @@ func (md *AuthMiddleware) CheckRoutePermission(next echo.HandlerFunc) echo.Handl
 func (md *AuthMiddleware) GetUserByToken(ctx context.Context, token string, userRepo repositories.UserRepositoryI) (dtos.UserDTO, error) {
 	opts := facades.AuthCredentialsOptions{
 		Realm:        md.auth.Keycloak.Admin.Realm,
+		Username:     md.auth.Keycloak.Admin.AdminUser,
+		Password:     md.auth.Keycloak.Admin.AdminPassword,
 		ClientID:     md.auth.Keycloak.Admin.ClientID,
 		ClientSecret: md.auth.Keycloak.Admin.ClientSecret,
 	}
@@ -128,6 +130,11 @@ func (md *AuthMiddleware) GetUserByToken(ctx context.Context, token string, user
 	userEmail := claims["email"].(string)
 
 	user, err := userRepo.FindByEmail(ctx, userEmail)
+	if err != nil {
+		return dtos.UserDTO{}, err
+	}
+
+	opts.AccessToken, err = md.authFacade.LoginAdmin(ctx, opts)
 	if err != nil {
 		return dtos.UserDTO{}, err
 	}
