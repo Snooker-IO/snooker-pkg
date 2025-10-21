@@ -23,6 +23,7 @@ type AuthFacadeInterface interface {
 	RemoveUserToGroup(ctx context.Context, opts AuthJoinUserGroup) error
 	GetUserGroups(ctx context.Context, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error)
 	CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error)
+	GetTokenClaims(ctx context.Context, token string, opts AuthCredentialsOptions) (map[string]interface{}, error)
 }
 
 type AuthCreateGroupOptions struct {
