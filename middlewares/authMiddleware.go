@@ -56,6 +56,16 @@ func (md *AuthMiddleware) CheckRoutePermission(next echo.HandlerFunc) echo.Handl
 			})
 		}
 
+		if route.Path == "" {
+			return utils.ResponseError(c, utils.RequestError{
+				StatusCode: http.StatusNotFound,
+				Exception: exceptions.Exception{
+					Message: "route resource not found",
+					Code:    "ROUTE_RESOURCE_NOT_FOUND",
+				},
+			})
+		}
+
 		if !route.Auth {
 			return next(c)
 		}
