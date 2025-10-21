@@ -2,7 +2,6 @@ package facades
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -372,22 +371,48 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 func (auth *AuthKeycloak) CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error) {
 	res, err := auth.Keycloak.RetrospectToken(ctx, token, opts.ClientID, opts.ClientSecret, opts.Realm)
 	if err != nil {
+		auth.Logger.Error(exceptions.ErrCheckAccessToken.Message, Error(err))
 		return false, utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
-			Exception:  exceptions.Exception{},
+			Exception:  exceptions.ErrCheckAccessToken,
 			Err:        err,
 		}
 	}
 
 	if res.Active != nil && !*res.Active {
+		auth.Logger.Error(exceptions.ErrAccessTokenInative.Message)
 		return false, utils.RequestError{
-			StatusCode: http.StatusInternalServerError,
-			Exception:  exceptions.Exception{},
-			Err:        errors.New("invalid user token"),
+			StatusCode: http.StatusUnauthorized,
+			Exception:  exceptions.ErrAccessTokenInative,
+			Err:        nil,
 		}
 	}
 
 	return true, nil
+}
+
+func (auth *AuthKeycloak) GetTokenClaims(ctx context.Context, token string, opts AuthCredentialsOptions) (map[string]interface{}, error) {
+	_, claims, err := auth.Keycloak.DecodeAccessToken(ctx, token, opts.Realm)
+	if err != nil {
+		auth.Logger.Error(exceptions.ErrAccessTokenInative.Message, Error(err))
+		return nil, utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.ErrDecodeAccessToken,
+			Err:        err,
+		}
+	}
+
+	if claims == nil {
+		auth.Logger.Error(exceptions.ErrAccessTokenInative.Message)
+		return nil, utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.ErrClaimsIsEmpty,
+			Err:        nil,
+		}
+	}
+
+	return *claims, nil
+
 }
 
 func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.Group, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {

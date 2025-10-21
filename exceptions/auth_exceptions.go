@@ -1,9 +1,15 @@
 package exceptions
 
 const (
-	KCRealmNotDefined             = "KEYCLOAK_REALM_NOT_DEFINED"
-	KCAdminLoginError             = "KEYCLOAK_ADMIN_LOGIN_ERROR"
-	KCLoginError                  = "KEYCLOAK_LOGIN_ERROR"
+	KCRealmNotDefined = "KEYCLOAK_REALM_NOT_DEFINED"
+	KCAdminLoginError = "KEYCLOAK_ADMIN_LOGIN_ERROR"
+	KCLoginError      = "KEYCLOAK_LOGIN_ERROR"
+
+	KCValidateTokenError     = "KEYCLOAK_VALIDATE_ACCESS_TOKEN_ERROR"
+	KCTokenExpired           = "KEYCLOAK_TOKEN_EXPIRED"
+	KCDecodeAccessTokenError = "KEYCLOAK_ACCESS_TOKEN_DECODE_ERROR"
+	KCTokenClaimsEmpty       = "KEYCLOAK_ACCESS_TOKEN_CLAIMS_EMPTY"
+
 	KCAdminCreateUserError        = "KEYCLOAK_ADMIN_CREATE_USER_ERROR"
 	KCAdminUserSetPasswordError   = "KEYCLOAK_ADMIN_USER_SET_PASSWORD_ERROR"
 	KCRegenerateClientSecretError = "KEYCLOAK_REGENERATE_CLIENT_SECRET_ERROR"
@@ -107,5 +113,25 @@ var (
 	ErrProccessSubGroups = Exception{
 		Message: "error proccess subgroups",
 		Code:    AuthProccessSubgroupError,
+	}
+
+	ErrCheckAccessToken = Exception{
+		Message: "error validate access token",
+		Code:    KCValidateTokenError,
+	}
+
+	ErrAccessTokenInative = Exception{
+		Message: "access token expired",
+		Code:    KCTokenExpired,
+	}
+
+	ErrDecodeAccessToken = Exception{
+		Message: "error decode access token",
+		Code:    KCDecodeAccessTokenError,
+	}
+
+	ErrClaimsIsEmpty = Exception{
+		Message: "token claims is empty",
+		Code:    KCTokenClaimsEmpty,
 	}
 )
