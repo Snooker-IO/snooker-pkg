@@ -450,6 +450,25 @@ func (auth *AuthKeycloak) LogoutAllSessionUser(ctx context.Context, userId strin
 	return nil
 }
 
+func (auth *AuthKeycloak) RefreshUserToken(ctx context.Context, refreshToken string, opts AuthCredentialsOptions) (AuthTokens, error) {
+	token, err := auth.Keycloak.RefreshToken(ctx, refreshToken, opts.ClientID, opts.ClientSecret, opts.Realm)
+	if err != nil {
+		auth.Logger.Error("refresh token error", Error(err))
+		return AuthTokens{}, utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.Exception{},
+			Err:        err,
+		}
+	}
+
+	return AuthTokens{
+		AccessToken:      token.AccessToken,
+		RefreshToken:     token.RefreshToken,
+		AccessExpiresIn:  token.ExpiresIn,
+		RefreshExpiresIn: token.RefreshExpiresIn,
+	}, nil
+}
+
 func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.Group, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {
 	var groupsRes []AuthUserGroup
 

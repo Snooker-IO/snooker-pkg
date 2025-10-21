@@ -145,16 +145,3 @@ func (md *AuthMiddleware) loadProvider(connectDB factories.Database) provider.Re
 		Database: connectDB,
 	}
 }
-
-func (md *AuthMiddleware) loginClient(ctx context.Context) (string, error) {
-	token, err := md.authFacade.LoginAdmin(ctx, facades.AuthCredentialsOptions{
-		Username: md.auth.Keycloak.Admin.AdminUser,
-		Password: md.auth.Keycloak.Admin.AdminPassword,
-		Realm:    md.auth.Keycloak.Admin.Realm,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return token, nil
-}
