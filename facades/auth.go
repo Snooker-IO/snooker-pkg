@@ -396,7 +396,7 @@ func (auth *AuthKeycloak) CheckUserTokenIsValid(ctx context.Context, token strin
 func (auth *AuthKeycloak) GetTokenClaims(ctx context.Context, token string, opts AuthCredentialsOptions) (map[string]interface{}, error) {
 	_, claims, err := auth.Keycloak.DecodeAccessToken(ctx, token, opts.Realm)
 	if err != nil {
-		auth.Logger.Error(exceptions.ErrAccessTokenInative.Message, Error(err))
+		auth.Logger.Error(exceptions.ErrClaimsIsEmpty.Message, Error(err))
 		return nil, utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
 			Exception:  exceptions.ErrDecodeAccessToken,
@@ -405,7 +405,7 @@ func (auth *AuthKeycloak) GetTokenClaims(ctx context.Context, token string, opts
 	}
 
 	if claims == nil {
-		auth.Logger.Error(exceptions.ErrAccessTokenInative.Message)
+		auth.Logger.Error(exceptions.ErrClaimsIsEmpty.Message)
 		return nil, utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
 			Exception:  exceptions.ErrClaimsIsEmpty,

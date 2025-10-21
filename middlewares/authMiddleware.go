@@ -85,7 +85,7 @@ func (md *AuthMiddleware) CheckRoutePermission(next echo.HandlerFunc) echo.Handl
 			})
 		}
 
-		user, err := md.GetUserByToken(c.Request().Context(), token, userRepo)
+		user, err := md.GetUserByToken(c.Request().Context(), parts[1], userRepo)
 		if err != nil {
 			return utils.ResponseError(c, err)
 		}
@@ -109,19 +109,13 @@ func (md *AuthMiddleware) CheckRoutePermission(next echo.HandlerFunc) echo.Handl
 }
 
 func (md *AuthMiddleware) GetUserByToken(ctx context.Context, token string, userRepo repositories.UserRepositoryI) (dtos.UserDTO, error) {
-	mainToken, err := md.loginClient(ctx)
-	if err != nil {
-		return dtos.UserDTO{}, err
-	}
-
 	opts := facades.AuthCredentialsOptions{
-		AccessToken:  mainToken,
 		Realm:        md.auth.Keycloak.Admin.Realm,
 		ClientID:     md.auth.Keycloak.Admin.ClientID,
 		ClientSecret: md.auth.Keycloak.Admin.ClientSecret,
 	}
 
-	_, err = md.authFacade.CheckUserTokenIsValid(ctx, token, opts)
+	_, err := md.authFacade.CheckUserTokenIsValid(ctx, token, opts)
 	if err != nil {
 		return dtos.UserDTO{}, err
 	}
