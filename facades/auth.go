@@ -24,6 +24,7 @@ type AuthFacadeInterface interface {
 	GetUserGroups(ctx context.Context, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error)
 	CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error)
 	GetTokenClaims(ctx context.Context, token string, opts AuthCredentialsOptions) (map[string]interface{}, error)
+	GetPermittedAttributes(groups []AuthUserGroup) map[string]int
 }
 
 type AuthCreateGroupOptions struct {
@@ -413,7 +414,25 @@ func (auth *AuthKeycloak) GetTokenClaims(ctx context.Context, token string, opts
 	}
 
 	return *claims, nil
+}
 
+func (auth *AuthKeycloak) GetPermittedAttributes(groups []AuthUserGroup) map[string]int {
+	attrsPermitted := map[string]int{}
+
+	for _, group := range groups {
+		for key, value := range group.Attributes {
+			attrValue, ok := attrsPermitted[key]
+			if !ok {
+				attrsPermitted[key] = value
+			}
+
+			if ok && (attrValue == value) {
+				attrsPermitted[key] = value
+			}
+		}
+	}
+
+	return attrsPermitted
 }
 
 func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.Group, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {
