@@ -3,7 +3,6 @@ package middlewares
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"github.com/Snooker-IO/snooker-pkg/adapters/dtos"
 	"github.com/Snooker-IO/snooker-pkg/exceptions"
@@ -73,19 +72,12 @@ func (md *AuthMiddleware) CheckRoutePermission(next echo.HandlerFunc) echo.Handl
 			})
 		}
 
-		parts := strings.SplitN(token, " ", 2)
-		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			return utils.ResponseError(c, utils.RequestError{
-				StatusCode: http.StatusBadRequest,
-				Exception: exceptions.Exception{
-					Message: "invalid Authorization header format",
-					Code:    "AUTH_TOKEN_HEADER_INVALID",
-				},
-				Err: nil,
-			})
+		tokenFormat, err := utils.ParseBearerToken(token)
+		if err != nil {
+			return utils.ResponseError(c, err)
 		}
 
-		user, err := md.GetUserByToken(c.Request().Context(), parts[1], userRepo)
+		user, err := md.GetUserByToken(c.Request().Context(), tokenFormat, userRepo)
 		if err != nil {
 			return utils.ResponseError(c, err)
 		}
