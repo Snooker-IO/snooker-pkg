@@ -26,6 +26,7 @@ type AuthFacadeInterface interface {
 	GetTokenClaims(ctx context.Context, token string, opts AuthCredentialsOptions) (map[string]interface{}, error)
 	GetPermittedAttributes(groups []AuthUserGroup) map[string]int
 	LogoutAllSessionUser(ctx context.Context, userId string, opts AuthCredentialsOptions) error
+	RefreshUserToken(ctx context.Context, refreshToken string, opts AuthCredentialsOptions) (AuthTokens, error)
 }
 
 type AuthCreateGroupOptions struct {
