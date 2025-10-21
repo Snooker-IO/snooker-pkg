@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -133,8 +132,6 @@ func (md *AuthMiddleware) GetUserByToken(ctx context.Context, token string, user
 		return dtos.UserDTO{}, err
 	}
 
-	fmt.Println(token)
-	fmt.Println(md.auth.Keycloak.Admin.Realm)
 	userGroups, err := md.authFacade.GetUserGroups(ctx, facades.AuthGetUserGroupsOptions{
 		UserID: user.ExternalId,
 		AuthCredentialsOptions: facades.AuthCredentialsOptions{
