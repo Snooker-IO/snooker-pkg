@@ -408,11 +408,12 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 	res := []AuthUserGroup{}
 	for _, group := range subgroups {
 		fGroup := AuthUserGroup{
-			ID:   group.ID,
-			Name: group.Name,
+			ID:         group.ID,
+			Name:       group.Name,
+			Attributes: map[string]int{},
 		}
 
-		if group.Attributes != nil {
+		if group.Attributes != nil && len(*group.Attributes) > 0 {
 			for key, value := range *group.Attributes {
 				if len(value) == 0 {
 					continue
