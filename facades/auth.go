@@ -375,11 +375,13 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 }
 
 func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) ([]AuthUserGroup, error) {
+	path := fmt.Sprintf("%s/admin/realms/%s/groups/%s/children", auth.Keycloak.RestyClient().BaseURL, opts.Realm, groupUUID)
+	auth.Logger.Info("request subgroups", String("path", path))
 	res, err := auth.Keycloak.RestyClient().
 		R().
 		SetAuthToken(opts.AccessToken).
 		SetResult(&[]gocloak.Group{}).
-		Get(fmt.Sprintf("%s/admin/realms/%s/groups/%s/children", auth.Keycloak.RestyClient().BaseURL, opts.Realm, groupUUID))
+		Get(path)
 	if err != nil {
 		auth.Logger.Error("error find group in keycloak", Error(err))
 		return nil, utils.RequestError{
