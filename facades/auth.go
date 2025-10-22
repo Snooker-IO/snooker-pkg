@@ -108,11 +108,13 @@ type AuthUserGroup struct {
 type AuthKeycloak struct {
 	Logger   LoggerFacadeInterface
 	Keycloak *gocloak.GoCloak
+	Config   factories.AuthConfig
 }
 
-func NewAuthFacade(auth factories.Auth, logger LoggerFacadeInterface) AuthFacadeInterface {
+func NewAuthFacade(auth factories.Auth, logger LoggerFacadeInterface, config factories.AuthConfig) AuthFacadeInterface {
 	return &AuthKeycloak{
 		Keycloak: auth.Keycloak.Client,
+		Config:   config,
 		Logger:   logger,
 	}
 }
@@ -375,14 +377,14 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 }
 
 func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) ([]AuthUserGroup, error) {
-	path := fmt.Sprintf("%s/admin/realms/%s/groups/%s/children", auth.Keycloak.RestyClient().BaseURL, opts.Realm, groupUUID)
+	path := fmt.Sprintf("%s/admin/realms/%s/groups/%s/children", auth.Config.Keycloak.URL, opts.Realm, groupUUID)
 	auth.Logger.Info("request subgroups", String("path", path))
-	res, err := auth.Keycloak.RestyClient().
-		R().
+	subgroups := []gocloak.Group{}
+	resp, err := auth.Keycloak.GetRequestWithBearerAuth(ctx, opts.AccessToken).
 		SetAuthToken(opts.AccessToken).
-		SetResult(&[]gocloak.Group{}).
+		SetResult(&subgroups).
 		Get(path)
-	if err != nil {
+	if err != nil || resp == nil || resp.IsError() {
 		auth.Logger.Error("error find group in keycloak", Error(err))
 		return nil, utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
@@ -391,10 +393,8 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 		}
 	}
 
-	subgroups := res.Result().(*[]gocloak.Group)
-
 	auth.Logger.Info("subgroups by keycloak", Any("subgroups", subgroups))
-	if subgroups == nil && len(*subgroups) <= 0 {
+	if subgroups == nil && len(subgroups) <= 0 {
 		auth.Logger.Error("subgroups not found", String("group_id", groupUUID))
 		return nil, utils.RequestError{
 			StatusCode: http.StatusNoContent,
@@ -405,9 +405,9 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 		}
 	}
 
-	subGroupsPtr := make([]*gocloak.Group, 0, len(*subgroups))
-	for i := range *subgroups {
-		subGroupsPtr = append(subGroupsPtr, &(*subgroups)[i])
+	subGroupsPtr := make([]*gocloak.Group, 0, len(subgroups))
+	for i := range subgroups {
+		subGroupsPtr = append(subGroupsPtr, &subgroups[i])
 	}
 
 	subgroupsFormat, err := auth.proccessGroups(ctx, subGroupsPtr, opts)
