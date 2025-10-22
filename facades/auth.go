@@ -384,6 +384,7 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 		}
 	}
 
+	auth.Logger.Info("group by keycloak", Any("group", group))
 	if group.SubGroups == nil && len(*group.SubGroups) <= 0 {
 		auth.Logger.Error("subgroups not found", String("group_id", groupUUID))
 		return nil, utils.RequestError{
@@ -403,6 +404,8 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 	groups, err := auth.proccessGroups(ctx, subGroupsPtr, AuthGetUserGroupsOptions{
 		AuthCredentialsOptions: opts,
 	})
+
+	auth.Logger.Info("groups processed", Any("group formatted", groups))
 	if err != nil {
 		auth.Logger.Error("error proccess subgroups", Error(err))
 		return nil, err
