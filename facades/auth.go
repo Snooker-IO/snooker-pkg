@@ -29,6 +29,7 @@ type AuthFacadeInterface interface {
 	LogoutAllSessionUser(ctx context.Context, userId string, opts AuthCredentialsOptions) error
 	RefreshUserToken(ctx context.Context, refreshToken string, opts AuthCredentialsOptions) (AuthTokens, error)
 	GetSubgroups(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) ([]AuthUserGroup, error)
+	DeleteGroup(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) error
 }
 
 type AuthCreateGroupOptions struct {
@@ -440,6 +441,21 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 	}
 
 	return res, nil
+}
+
+func (auth *AuthKeycloak) DeleteGroup(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) error {
+	err := auth.Keycloak.DeleteGroup(ctx, opts.AccessToken, opts.Realm, groupUUID)
+	if err != nil {
+		return utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception: exceptions.Exception{
+				Message: "error delete group",
+				Code:    exceptions.KCAdminDeleteGroupError,
+			},
+		}
+	}
+
+	return nil
 }
 
 func (auth *AuthKeycloak) CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error) {

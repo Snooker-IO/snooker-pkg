@@ -20,6 +20,7 @@ const (
 	KCAdminRemoveUserGroupError = "KEYCLOAK_ADMIN_REMOVE_USER_GROUP_ERROR"
 	KCAdminGetUserGroupsError   = "KEYCLOAK_ADMIN_GET_USER_GROUPS_ERROR"
 	KCAdminGetGroupError        = "KEYCLOAK_ADMIN_GET_GROUP_ERROR"
+	KCAdminDeleteGroupError     = "KEYCLOAK_ADMIN_DELETE_GROUP_ERROR"
 
 	KCLoginClientError        = "KEYCLOAK_LOGIN_CLIENT_ERROR"
 	KCCLientIdNotDefined      = "KEYCLOAK_CLIENT_ID_NOT_DEFINED"
