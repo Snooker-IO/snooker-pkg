@@ -412,6 +412,20 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 			Name: group.Name,
 		}
 
+		if group.Attributes != nil {
+			for key, value := range *group.Attributes {
+				if len(value) == 0 {
+					continue
+				}
+				v, err := strconv.Atoi(value[0])
+				if err != nil {
+					auth.Logger.Error("atributo não numérico", Error(err))
+					continue
+				}
+				fGroup.Attributes[key] = v
+			}
+		}
+
 		subs, err := auth.GetSubgroups(ctx, *group.ID, opts)
 		if err != nil {
 			return nil, err
