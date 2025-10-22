@@ -364,7 +364,7 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 		}
 	}
 
-	groupsFormat, err := auth.proccessGroups(ctx, groups, opts)
+	groupsFormat, err := auth.proccessGroups(ctx, groups, opts.AuthCredentialsOptions)
 	if err != nil {
 		auth.Logger.Info("proccess keycloak groups", Any("groups", groups))
 		return nil, err
@@ -401,9 +401,7 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 		subGroupsPtr = append(subGroupsPtr, &(*group.SubGroups)[i])
 	}
 
-	groups, err := auth.proccessGroups(ctx, subGroupsPtr, AuthGetUserGroupsOptions{
-		AuthCredentialsOptions: opts,
-	})
+	groups, err := auth.proccessGroups(ctx, subGroupsPtr, opts)
 
 	auth.Logger.Info("groups processed", Any("group formatted", groups))
 	if err != nil {
@@ -512,7 +510,7 @@ func (auth *AuthKeycloak) RefreshUserToken(ctx context.Context, refreshToken str
 	}, nil
 }
 
-func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.Group, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {
+func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.Group, opts AuthCredentialsOptions) ([]AuthUserGroup, error) {
 	var groupsRes []AuthUserGroup
 
 	for _, group := range groups {

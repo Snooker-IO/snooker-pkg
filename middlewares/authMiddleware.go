@@ -95,6 +95,7 @@ func (md *AuthMiddleware) CheckRoutePermission(next echo.HandlerFunc) echo.Handl
 		for key, value := range user.AttributesPermitted {
 			if key == route.PermissionKey && value == 1 {
 				c.Set("user", user)
+				c.Set("access_token", tokenFormat)
 				return next(c)
 			}
 		}
