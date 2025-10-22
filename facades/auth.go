@@ -405,18 +405,26 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 		}
 	}
 
-	subGroupsPtr := make([]*gocloak.Group, 0, len(subgroups))
-	for i := range subgroups {
-		subGroupsPtr = append(subGroupsPtr, &subgroups[i])
+	res := []AuthUserGroup{}
+	for _, group := range subgroups {
+		fGroup := AuthUserGroup{
+			ID:   group.ID,
+			Name: group.Name,
+		}
+
+		subs, err := auth.GetSubgroups(ctx, *group.ID, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(subs) > 0 {
+			fGroup.Childrens = subs
+		}
+
+		res = append(res, fGroup)
 	}
 
-	subgroupsFormat, err := auth.proccessGroups(ctx, subGroupsPtr, opts)
-	if err != nil {
-		auth.Logger.Error("error proccess subgroups", Error(err))
-		return nil, err
-	}
-
-	return subgroupsFormat, nil
+	return res, nil
 }
 
 func (auth *AuthKeycloak) CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error) {
