@@ -42,7 +42,7 @@ func (md *AuthMiddleware) CheckRoutePermission(next echo.HandlerFunc) echo.Handl
 		md.logger.Driver = factories.ZapLoggerDriver
 
 		md.loggerFacade = facades.NewLoggerFacade(md.logger.LoggerFactory().ZapLogger.Zap)
-		md.authFacade = facades.NewAuthFacade(md.auth.AuthFactory(), md.loggerFacade)
+		md.authFacade = facades.NewAuthFacade(md.auth.AuthFactory(), md.loggerFacade, md.auth)
 		connectDB := md.database.DatabaseFactory()
 		provs := md.loadProvider(connectDB)
 
