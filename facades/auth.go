@@ -27,6 +27,7 @@ type AuthFacadeInterface interface {
 	GetPermittedAttributes(groups []AuthUserGroup) map[string]int
 	LogoutAllSessionUser(ctx context.Context, userId string, opts AuthCredentialsOptions) error
 	RefreshUserToken(ctx context.Context, refreshToken string, opts AuthCredentialsOptions) (AuthTokens, error)
+	GetSubgroups(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) ([]AuthUserGroup, error)
 }
 
 type AuthCreateGroupOptions struct {
@@ -370,6 +371,44 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 	}
 
 	return groupsFormat, nil
+}
+
+func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) ([]AuthUserGroup, error) {
+	group, err := auth.Keycloak.GetGroup(ctx, opts.AccessToken, opts.Realm, groupUUID)
+	if err != nil {
+		auth.Logger.Error("error find group in keycloak", Error(err))
+		return nil, utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.ErrKeycloakGetGroup,
+			Err:        err,
+		}
+	}
+
+	if group.SubGroups == nil && len(*group.SubGroups) <= 0 {
+		auth.Logger.Error("subgroups not found", String("group_id", groupUUID))
+		return nil, utils.RequestError{
+			StatusCode: http.StatusNoContent,
+			Exception: exceptions.Exception{
+				Message: "subgroups not found",
+				Code:    exceptions.AuthSubGroupsNotFound,
+			},
+		}
+	}
+
+	subGroupsPtr := make([]*gocloak.Group, 0, len(*group.SubGroups))
+	for i := range *group.SubGroups {
+		subGroupsPtr = append(subGroupsPtr, &(*group.SubGroups)[i])
+	}
+
+	groups, err := auth.proccessGroups(ctx, subGroupsPtr, AuthGetUserGroupsOptions{
+		AuthCredentialsOptions: opts,
+	})
+	if err != nil {
+		auth.Logger.Error("error proccess subgroups", Error(err))
+		return nil, err
+	}
+
+	return groups, nil
 }
 
 func (auth *AuthKeycloak) CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error) {

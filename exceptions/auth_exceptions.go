@@ -28,6 +28,7 @@ const (
 	KCAdminPasswordNotDefined = "KEYCLOAK_ADMIN_PASSWORD_NOT_DEFINED"
 
 	AuthProccessSubgroupError = "AUTH_PROCCESS_SUBGROUP_ERROR"
+	AuthSubGroupsNotFound     = "AUTH_SUB_GROUPS_NOT_FOUND"
 )
 
 var (
