@@ -2,6 +2,7 @@ package facades
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -374,7 +375,11 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 }
 
 func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) ([]AuthUserGroup, error) {
-	group, err := auth.Keycloak.GetGroup(ctx, opts.AccessToken, opts.Realm, groupUUID)
+	res, err := auth.Keycloak.RestyClient().
+		R().
+		SetAuthToken(opts.AccessToken).
+		SetResult(&[]gocloak.Group{}).
+		Get(fmt.Sprintf("%s/admin/realms/%s/groups/%s/children", auth.Keycloak.RestyClient().BaseURL, opts.Realm, groupUUID))
 	if err != nil {
 		auth.Logger.Error("error find group in keycloak", Error(err))
 		return nil, utils.RequestError{
@@ -384,8 +389,10 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 		}
 	}
 
-	auth.Logger.Info("group by keycloak", Any("group", group))
-	if group.SubGroups == nil && len(*group.SubGroups) <= 0 {
+	subgroups := res.Result().(*[]gocloak.Group)
+
+	auth.Logger.Info("subgroups by keycloak", Any("subgroups", subgroups))
+	if subgroups == nil && len(*subgroups) <= 0 {
 		auth.Logger.Error("subgroups not found", String("group_id", groupUUID))
 		return nil, utils.RequestError{
 			StatusCode: http.StatusNoContent,
@@ -396,20 +403,18 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 		}
 	}
 
-	subGroupsPtr := make([]*gocloak.Group, 0, len(*group.SubGroups))
-	for i := range *group.SubGroups {
-		subGroupsPtr = append(subGroupsPtr, &(*group.SubGroups)[i])
+	subGroupsPtr := make([]*gocloak.Group, 0, len(*subgroups))
+	for i := range *subgroups {
+		subGroupsPtr = append(subGroupsPtr, &(*subgroups)[i])
 	}
 
-	groups, err := auth.proccessGroups(ctx, subGroupsPtr, opts)
-
-	auth.Logger.Info("groups processed", Any("group formatted", groups))
+	subgroupsFormat, err := auth.proccessGroups(ctx, subGroupsPtr, opts)
 	if err != nil {
 		auth.Logger.Error("error proccess subgroups", Error(err))
 		return nil, err
 	}
 
-	return groups, nil
+	return subgroupsFormat, nil
 }
 
 func (auth *AuthKeycloak) CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error) {
