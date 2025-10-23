@@ -548,10 +548,8 @@ func (auth *AuthKeycloak) GetTokenClaims(ctx context.Context, token string, opts
 }
 
 func (auth *AuthKeycloak) GetPermittedAttributes(groups []AuthUserGroup, attrsPermitted map[string]int) {
-	auth.Logger.Info("auth user groups", Any("groups", groups))
 	for _, group := range groups {
 		for key, value := range group.Attributes {
-			auth.Logger.Info("group attrs", Any("attrs", group.Attributes))
 			attrValue, ok := attrsPermitted[key]
 			if !ok {
 				attrsPermitted[key] = value
@@ -566,8 +564,6 @@ func (auth *AuthKeycloak) GetPermittedAttributes(groups []AuthUserGroup, attrsPe
 			auth.GetPermittedAttributes(group.Childrens, attrsPermitted)
 		}
 	}
-
-	auth.Logger.Info("attrs permitted", Any("attrs", attrsPermitted))
 }
 
 func (auth *AuthKeycloak) LogoutAllSessionUser(ctx context.Context, userId string, opts AuthCredentialsOptions) error {
@@ -612,7 +608,6 @@ func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.
 		groupsId[*group.ID] = true
 	}
 
-	auth.Logger.Info("process groups", Any("groups", groups))
 	for _, group := range groups {
 		exist := auth.groupExistInSubgroup(*group.ID, groupsRes)
 		if exist {
@@ -645,6 +640,7 @@ func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.
 
 	return groupsRes, nil
 }
+
 func (auth *AuthKeycloak) groupExistInSubgroup(groupId string, groups []AuthUserGroup) bool {
 	for _, group := range groups {
 		if *group.ID == groupId {
