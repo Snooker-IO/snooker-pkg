@@ -25,10 +25,10 @@ func (userRepository *UserRepository) FindByEmail(ctx context.Context, orgUUID s
 	query := userRepository.ReadOnly.Table(UserTableName)
 
 	if orgUUID != "" {
-		query.Joins("INNER JOIN organization_users ON users.uuid = organization_users.user_uuid")
+		query.Joins("INNER JOIN organization_users ON users.uuid = organization_users.user_uuid").Where("organization_users.organization_uuid = ?", orgUUID)
 	}
 
-	err := query.Where("email = ?", email).First(&user).Error
+	err := query.Where("email = ?", email).Debug().First(&user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return dtos.UserDTO{}, utils.RequestError{
 			StatusCode: http.StatusNotFound,
