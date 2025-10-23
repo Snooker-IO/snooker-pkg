@@ -152,6 +152,7 @@ func (md *AuthMiddleware) GetUserByToken(ctx context.Context, token string, orgU
 		return dtos.UserDTO{}, err
 	}
 
+	user.AttributesPermitted = map[string]int{}
 	md.authFacade.GetPermittedAttributes(userGroups, user.AttributesPermitted)
 	return user, nil
 }
