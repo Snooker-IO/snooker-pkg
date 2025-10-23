@@ -406,7 +406,6 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 
 func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) ([]AuthUserGroup, error) {
 	path := fmt.Sprintf("%s/admin/realms/%s/groups/%s/children", auth.Config.Keycloak.URL, opts.Realm, groupUUID)
-	auth.Logger.Info("request subgroups", String("path", path))
 	subgroups := []gocloak.Group{}
 	resp, err := auth.Keycloak.GetRequestWithBearerAuth(ctx, opts.AccessToken).
 		SetAuthToken(opts.AccessToken).
@@ -421,7 +420,6 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 		}
 	}
 
-	auth.Logger.Info("subgroups by keycloak", Any("subgroups", subgroups))
 	if subgroups == nil && len(subgroups) <= 0 {
 		auth.Logger.Error("subgroups not found", String("group_id", groupUUID))
 		return nil, utils.RequestError{
