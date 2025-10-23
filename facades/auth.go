@@ -605,10 +605,20 @@ func (auth *AuthKeycloak) RefreshUserToken(ctx context.Context, refreshToken str
 
 func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.Group, opts AuthCredentialsOptions) ([]AuthUserGroup, error) {
 	var groupsRes []AuthUserGroup
+	groupsId := map[string]bool{}
 	var err error
+
+	for _, group := range groups {
+		groupsId[*group.ID] = true
+	}
 
 	auth.Logger.Info("process groups", Any("groups", groups))
 	for _, group := range groups {
+		exist := auth.groupExistInSubgroup(*group.ID, groupsRes)
+		if exist {
+			continue
+		}
+
 		if group.ID == nil {
 			continue
 		}
@@ -634,6 +644,23 @@ func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.
 	}
 
 	return groupsRes, nil
+}
+func (auth *AuthKeycloak) groupExistInSubgroup(groupId string, groups []AuthUserGroup) bool {
+	for _, group := range groups {
+		if *group.ID == groupId {
+			return true
+		}
+
+		if len(group.Childrens) > 0 {
+			exist := auth.groupExistInSubgroup(groupId, group.Childrens)
+
+			if exist {
+				return exist
+			}
+		}
+	}
+
+	return false
 }
 
 func (auth *AuthKeycloak) processAttributes(attributes *map[string][]string) (map[string]int, error) {
