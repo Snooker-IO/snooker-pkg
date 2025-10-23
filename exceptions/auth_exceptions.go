@@ -21,6 +21,7 @@ const (
 	KCAdminGetUserGroupsError   = "KEYCLOAK_ADMIN_GET_USER_GROUPS_ERROR"
 	KCAdminGetGroupError        = "KEYCLOAK_ADMIN_GET_GROUP_ERROR"
 	KCAdminDeleteGroupError     = "KEYCLOAK_ADMIN_DELETE_GROUP_ERROR"
+	KCAdminUpdateGroupError     = "KEYCLOK_ADMIN_UPDATE_GROUP_ERROR"
 
 	KCLoginClientError        = "KEYCLOAK_LOGIN_CLIENT_ERROR"
 	KCCLientIdNotDefined      = "KEYCLOAK_CLIENT_ID_NOT_DEFINED"
@@ -141,5 +142,10 @@ var (
 	ErrLogoutAllSessions = Exception{
 		Message: "error logout all sessions",
 		Code:    KCLogoutAllSessionError,
+	}
+
+	ErrUpdateGroup = Exception{
+		Message: "error update group",
+		Code:    KCAdminUpdateGroupError,
 	}
 )

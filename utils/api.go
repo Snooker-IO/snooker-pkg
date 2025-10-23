@@ -2,7 +2,6 @@ package utils
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/Snooker-IO/snooker-pkg/exceptions"
 	"github.com/labstack/echo/v4"
@@ -11,7 +10,7 @@ import (
 type RequestError struct {
 	StatusCode int
 	Exception  exceptions.Exception
-	Err        interface{}
+	Err        error
 }
 
 func (err RequestError) Error() string {
@@ -19,7 +18,6 @@ func (err RequestError) Error() string {
 }
 
 func ResponseError(ctx echo.Context, err error) error {
-	fmt.Println(err)
 	var requestError RequestError
 	_ = errors.As(err, &requestError)
 
@@ -31,11 +29,18 @@ func ResponseError(ctx echo.Context, err error) error {
 	})
 }
 
+func GetRequestError(err error) (RequestError, bool) {
+	var reqErr RequestError
+	isRequestErr := errors.As(err, &reqErr)
+
+	return reqErr, isRequestErr
+}
+
 type ErrorResponse struct {
-	Status  bool        `json:"status"`
-	Message string      `json:"message"`
-	Code    string      `json:"code"`
-	Errors  interface{} `json:"errors"`
+	Status  bool   `json:"status"`
+	Message string `json:"message"`
+	Code    string `json:"code"`
+	Errors  error  `json:"errors"`
 }
 
 type Response struct {

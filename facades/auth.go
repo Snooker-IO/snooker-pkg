@@ -458,6 +458,31 @@ func (auth *AuthKeycloak) DeleteGroup(ctx context.Context, groupUUID string, opt
 	return nil
 }
 
+func (auth *AuthKeycloak) UpdateGroup(ctx context.Context, group AuthUserGroup, opts AuthCredentialsOptions) error {
+	attrs := map[string][]string{}
+
+	for key, value := range group.Attributes {
+		attrs[key] = []string{strconv.Itoa(value)}
+	}
+
+	err := auth.Keycloak.UpdateGroup(ctx, opts.AccessToken, opts.Realm, gocloak.Group{
+		ID:         group.ID,
+		Name:       group.Name,
+		Attributes: &attrs,
+	})
+
+	if err != nil {
+		auth.Logger.Error(exceptions.ErrUpdateGroup.Message, Error(err))
+		return utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.ErrUpdateGroup,
+			Err:        err,
+		}
+	}
+
+	return nil
+}
+
 func (auth *AuthKeycloak) CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error) {
 	res, err := auth.Keycloak.RetrospectToken(ctx, token, opts.ClientID, opts.ClientSecret, opts.Realm)
 	if err != nil {
