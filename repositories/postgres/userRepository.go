@@ -20,18 +20,33 @@ type UserRepository struct {
 	ReadOnly  *gorm.DB
 }
 
-func (userRepository *UserRepository) FindByEmail(ctx context.Context, email string) (dtos.UserDTO, error) {
+func (userRepository *UserRepository) FindByEmail(ctx context.Context, orgUUID string, email string) (dtos.UserDTO, error) {
 	var user dtos.UserDTO
-	err := userRepository.ReadOnly.Table(UserTableName).Where("email = ?", email).First(&user).Debug().Error
+	query := userRepository.ReadOnly.Table(UserTableName)
+
+	if orgUUID != "" {
+		query.Joins("INNER JOIN organization_users ON users.uuid = organization_users.user_uuid")
+	}
+
+	err := query.Where("email = ?", email).First(&user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return dtos.UserDTO{}, nil
+		return dtos.UserDTO{}, utils.RequestError{
+			StatusCode: http.StatusNotFound,
+			Exception: exceptions.Exception{
+				Message: "user not found",
+				Code:    "AUTH_USER_NOT_FOUND",
+			},
+		}
 	}
 
 	if err != nil {
 		return dtos.UserDTO{}, utils.RequestError{
 			StatusCode: http.StatusInternalServerError,
-			Exception:  exceptions.Exception{},
-			Err:        err,
+			Exception: exceptions.Exception{
+				Message: "error find user",
+				Code:    "API_V1_DB_FIND_USER_ERROR",
+			},
+			Err: err,
 		}
 	}
 

@@ -13,7 +13,7 @@ type RouteRepositoryI interface {
 }
 
 type UserRepositoryI interface {
-	FindByEmail(ctx context.Context, email string) (dtos.UserDTO, error)
+	FindByEmail(ctx context.Context, orgUUID string, email string) (dtos.UserDTO, error)
 }
 
 func NewRouteRepository(db factories.Database) RouteRepositoryI {

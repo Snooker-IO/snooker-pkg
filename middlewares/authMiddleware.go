@@ -66,6 +66,11 @@ func (md *AuthMiddleware) CheckRoutePermission(next echo.HandlerFunc) echo.Handl
 			})
 		}
 
+		orgUUID := ""
+		if route.RequiredOrg {
+			orgUUID = c.Param("orgUUID")
+		}
+
 		if !route.Auth {
 			return next(c)
 		}
@@ -87,7 +92,7 @@ func (md *AuthMiddleware) CheckRoutePermission(next echo.HandlerFunc) echo.Handl
 			return utils.ResponseError(c, err)
 		}
 
-		user, err := md.GetUserByToken(c.Request().Context(), tokenFormat, userRepo)
+		user, err := md.GetUserByToken(c.Request().Context(), tokenFormat, orgUUID, userRepo)
 		if err != nil {
 			return utils.ResponseError(c, err)
 		}
@@ -111,7 +116,7 @@ func (md *AuthMiddleware) CheckRoutePermission(next echo.HandlerFunc) echo.Handl
 	}
 }
 
-func (md *AuthMiddleware) GetUserByToken(ctx context.Context, token string, userRepo repositories.UserRepositoryI) (dtos.UserDTO, error) {
+func (md *AuthMiddleware) GetUserByToken(ctx context.Context, token string, orgUUID string, userRepo repositories.UserRepositoryI) (dtos.UserDTO, error) {
 	opts := facades.AuthCredentialsOptions{
 		Realm:        md.auth.Keycloak.Admin.Realm,
 		ClientID:     md.auth.Keycloak.Admin.ClientID,
@@ -130,7 +135,7 @@ func (md *AuthMiddleware) GetUserByToken(ctx context.Context, token string, user
 
 	userEmail := claims["email"].(string)
 
-	user, err := userRepo.FindByEmail(ctx, userEmail)
+	user, err := userRepo.FindByEmail(ctx, orgUUID, userEmail)
 	if err != nil {
 		return dtos.UserDTO{}, err
 	}
