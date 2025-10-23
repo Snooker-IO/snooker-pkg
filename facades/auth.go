@@ -609,6 +609,7 @@ func (auth *AuthKeycloak) RefreshUserToken(ctx context.Context, refreshToken str
 
 func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.Group, opts AuthCredentialsOptions) ([]AuthUserGroup, error) {
 	var groupsRes []AuthUserGroup
+	var err error
 
 	for _, group := range groups {
 		if group.ID == nil {
@@ -616,46 +617,23 @@ func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.
 			continue
 		}
 
-		fullGroup, err := auth.Keycloak.GetGroup(ctx, opts.AccessToken, opts.Realm, *group.ID)
-		if err != nil {
-			auth.Logger.Error(exceptions.ErrKeycloakGetGroup.Message, Any("group_id", *group.ID), Error(err))
-			return nil, utils.RequestError{
-				StatusCode: http.StatusInternalServerError,
-				Exception:  exceptions.ErrKeycloakGetGroup,
-				Err:        err,
-			}
-		}
-
 		g := AuthUserGroup{
-			ID:         fullGroup.ID,
-			Name:       fullGroup.Name,
+			ID:         group.ID,
+			Name:       group.Name,
 			Attributes: map[string]int{},
 		}
 
-		g.Attributes, err = auth.processAttributes(fullGroup.Attributes)
+		g.Attributes, err = auth.processAttributes(group.Attributes)
 		if err != nil {
 			return nil, err
 		}
 
-		if fullGroup.SubGroups != nil && len(*fullGroup.SubGroups) > 0 {
-			auth.Logger.Debug("proccess subgroups", Any("group_id", fullGroup.ID))
-			subGroupsPtr := make([]*gocloak.Group, 0, len(*fullGroup.SubGroups))
-			for i := range *fullGroup.SubGroups {
-				subGroupsPtr = append(subGroupsPtr, &(*fullGroup.SubGroups)[i])
-			}
-
-			subgroups, err := auth.proccessGroups(ctx, subGroupsPtr, opts)
-			if err != nil {
-				auth.Logger.Error(exceptions.ErrProccessSubGroups.Message, Error(err))
-				return nil, utils.RequestError{
-					StatusCode: http.StatusInternalServerError,
-					Exception:  exceptions.ErrProccessSubGroups,
-					Err:        err,
-				}
-			}
-			g.Childrens = subgroups
+		subgroups, err := auth.GetSubgroups(ctx, *group.ID, opts)
+		if err != nil {
+			return nil, err
 		}
 
+		g.Childrens = subgroups
 		groupsRes = append(groupsRes, g)
 	}
 
