@@ -25,7 +25,7 @@ type AuthFacadeInterface interface {
 	GetUserGroups(ctx context.Context, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error)
 	CheckUserTokenIsValid(ctx context.Context, token string, opts AuthCredentialsOptions) (bool, error)
 	GetTokenClaims(ctx context.Context, token string, opts AuthCredentialsOptions) (map[string]interface{}, error)
-	GetPermittedAttributes(groups []AuthUserGroup) map[string]int
+	GetPermittedAttributes(groups []AuthUserGroup, attrsPermitted map[string]int)
 	LogoutAllSessionUser(ctx context.Context, userId string, opts AuthCredentialsOptions) error
 	RefreshUserToken(ctx context.Context, refreshToken string, opts AuthCredentialsOptions) (AuthTokens, error)
 	GetSubgroups(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) ([]AuthUserGroup, error)
@@ -396,10 +396,11 @@ func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGro
 
 	groupsFormat, err := auth.proccessGroups(ctx, groups, opts.AuthCredentialsOptions)
 	if err != nil {
-		auth.Logger.Info("proccess keycloak groups", Any("groups", groups))
+		auth.Logger.Info("error proccess keycloak groups", Error(err))
 		return nil, err
 	}
 
+	auth.Logger.Info("groups format", Any("groups", groupsFormat))
 	return groupsFormat, nil
 }
 
@@ -440,18 +441,9 @@ func (auth *AuthKeycloak) GetSubgroups(ctx context.Context, groupUUID string, op
 			Attributes: map[string]int{},
 		}
 
-		if group.Attributes != nil && len(*group.Attributes) > 0 {
-			for key, value := range *group.Attributes {
-				if len(value) == 0 {
-					continue
-				}
-				v, err := strconv.Atoi(value[0])
-				if err != nil {
-					auth.Logger.Error("atributo não numérico", Error(err))
-					continue
-				}
-				fGroup.Attributes[key] = v
-			}
+		fGroup.Attributes, err = auth.processAttributes(group.Attributes)
+		if err != nil {
+			return nil, err
 		}
 
 		subs, err := auth.GetSubgroups(ctx, *group.ID, opts)
@@ -555,11 +547,10 @@ func (auth *AuthKeycloak) GetTokenClaims(ctx context.Context, token string, opts
 	return *claims, nil
 }
 
-func (auth *AuthKeycloak) GetPermittedAttributes(groups []AuthUserGroup) map[string]int {
-	attrsPermitted := map[string]int{}
-
+func (auth *AuthKeycloak) GetPermittedAttributes(groups []AuthUserGroup, attrsPermitted map[string]int) {
 	for _, group := range groups {
 		for key, value := range group.Attributes {
+			auth.Logger.Info("group attrs", Any("attrs", group.Attributes))
 			attrValue, ok := attrsPermitted[key]
 			if !ok {
 				attrsPermitted[key] = value
@@ -569,9 +560,11 @@ func (auth *AuthKeycloak) GetPermittedAttributes(groups []AuthUserGroup) map[str
 				attrsPermitted[key] = value
 			}
 		}
-	}
 
-	return attrsPermitted
+		if len(group.Childrens) > 0 {
+			auth.GetPermittedAttributes(group.Childrens, attrsPermitted)
+		}
+	}
 }
 
 func (auth *AuthKeycloak) LogoutAllSessionUser(ctx context.Context, userId string, opts AuthCredentialsOptions) error {
@@ -611,9 +604,9 @@ func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.
 	var groupsRes []AuthUserGroup
 	var err error
 
+	auth.Logger.Info("process groups", Any("groups", groups))
 	for _, group := range groups {
 		if group.ID == nil {
-			auth.Logger.Info("group ID not defined. Ignore group in proccess.", Any("group", group))
 			continue
 		}
 
