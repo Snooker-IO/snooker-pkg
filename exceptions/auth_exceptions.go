@@ -148,4 +148,9 @@ var (
 		Message: "error update group",
 		Code:    KCAdminUpdateGroupError,
 	}
+
+	ErrGetGroup = Exception{
+		Message: "error find group",
+		Code:    KCAdminGetGroupError,
+	}
 )

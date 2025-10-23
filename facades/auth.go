@@ -29,6 +29,7 @@ type AuthFacadeInterface interface {
 	LogoutAllSessionUser(ctx context.Context, userId string, opts AuthCredentialsOptions) error
 	RefreshUserToken(ctx context.Context, refreshToken string, opts AuthCredentialsOptions) (AuthTokens, error)
 	GetSubgroups(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) ([]AuthUserGroup, error)
+	GetGroup(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) (AuthUserGroup, error)
 	DeleteGroup(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) error
 }
 
@@ -357,6 +358,31 @@ func (auth *AuthKeycloak) RegenerateClientSecret(ctx context.Context, opts AuthC
 	return *credentials.SecretData, nil
 }
 
+func (auth *AuthKeycloak) GetGroup(ctx context.Context, groupUUID string, opts AuthCredentialsOptions) (AuthUserGroup, error) {
+	group, err := auth.Keycloak.GetGroup(ctx, opts.AccessToken, opts.Realm, groupUUID)
+	if err != nil {
+		auth.Logger.Error("error find group", Error(err))
+		return AuthUserGroup{}, utils.RequestError{
+			StatusCode: http.StatusInternalServerError,
+			Exception:  exceptions.ErrGetGroup,
+			Err:        err,
+		}
+	}
+
+	groupF := AuthUserGroup{
+		ID:         group.ID,
+		Name:       group.Name,
+		Attributes: map[string]int{},
+	}
+
+	groupF.Attributes, err = auth.processAttributes(group.Attributes)
+	if err != nil {
+		return AuthUserGroup{}, err
+	}
+
+	return groupF, nil
+}
+
 func (auth *AuthKeycloak) GetUserGroups(ctx context.Context, opts AuthGetUserGroupsOptions) ([]AuthUserGroup, error) {
 	groups, err := auth.Keycloak.GetUserGroups(ctx, opts.AccessToken, opts.Realm, opts.UserID, gocloak.GetGroupsParams{})
 	if err != nil {
@@ -606,18 +632,9 @@ func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.
 			Attributes: map[string]int{},
 		}
 
-		if fullGroup.Attributes != nil {
-			for key, value := range *fullGroup.Attributes {
-				if len(value) == 0 {
-					continue
-				}
-				v, err := strconv.Atoi(value[0])
-				if err != nil {
-					auth.Logger.Error("atributo não numérico", Error(err))
-					continue
-				}
-				g.Attributes[key] = v
-			}
+		g.Attributes, err = auth.processAttributes(fullGroup.Attributes)
+		if err != nil {
+			return nil, err
 		}
 
 		if fullGroup.SubGroups != nil && len(*fullGroup.SubGroups) > 0 {
@@ -643,4 +660,31 @@ func (auth *AuthKeycloak) proccessGroups(ctx context.Context, groups []*gocloak.
 	}
 
 	return groupsRes, nil
+}
+
+func (auth *AuthKeycloak) processAttributes(attributes *map[string][]string) (map[string]int, error) {
+	attrs := map[string]int{}
+	if attributes != nil {
+		for key, value := range *attributes {
+			if len(value) == 0 {
+				continue
+			}
+
+			v, err := strconv.Atoi(value[0])
+			if err != nil {
+				auth.Logger.Error("error format attribute value", Error(err))
+				return nil, utils.RequestError{
+					StatusCode: http.StatusInternalServerError,
+					Exception: exceptions.Exception{
+						Message: "error format attributes",
+						Code:    "AUTH_FORMAT_ATTRIBUTES_ERROR",
+					},
+					Err: err,
+				}
+			}
+			attrs[key] = v
+		}
+	}
+
+	return attrs, nil
 }
